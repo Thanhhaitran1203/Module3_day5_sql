@@ -187,18 +187,56 @@ join vattu vt on vt.id = ctpx.vattu_id;
 
 -- Câu 1. Tạo Stored procedure (SP) cho biết 
 -- tổng số lượng cuối của vật tư với mã vật tư là tham số vào.
- select vt.id,(tk.soluongdau + ctpn.soluongnhap - ctpx.soluongxuat) as soluong from  vattu vt 
- join tonkho tk on vt.id = tk.vattu_id
- join chitietphieunhap ctpn on ctpn.vattu_id = vt.id
- join chitietphieuxuat ctpx on ctpx.vattu_id = vt.id where vt.id = 2;
- 
-DELIMITER //
 
+DELIMITER //
 CREATE PROCEDURE soluongcuoi(in mavt int,out soluong int)
  BEGIN
- select * from  vattu vt 
- join 
-	set soluong = 
+	set soluong = (select (sum(ctpn.soluongnhap) - sum(ctpx.soluongxuat)) as soluong from  vattu vt 
+ join tonkho tk on vt.id = tk.vattu_id
+ join chitietphieunhap ctpn on ctpn.vattu_id = vt.id
+ join chitietphieuxuat ctpx on ctpx.vattu_id = vt.id where vt.id = mavt
+ group by vt.id);
  END //
 
 DELIMITER ;
+
+
+-- Câu 2. Tạo SP cho biết tổng tiền xuất của vật tư với mã vật tư là tham số vào, out là tổng tiền xuất
+DELIMITER //
+CREATE PROCEDURE sotienxuat(in mavt int,out tongtien int)
+ BEGIN
+	set tongtien = (select (sum(ctpx.dongiaxuat) * sum(ctpx.soluongxuat)) as soluong from  vattu vt 
+ join chitietphieuxuat ctpx on ctpx.vattu_id = vt.id where vt.id = mavt
+ group by vt.id);
+ END //
+
+DELIMITER ;
+
+-- Câu 3. Tạo SP cho biết tổng số lượng đặt theo số đơn hàng với số đơn hàng là tham số vào.
+DELIMITER //
+CREATE PROCEDURE loluongdat(in madh int)
+ BEGIN
+	select dh.id,sum(soluongdat) from donhang dh 
+    join chitietdonhang ctdh on dh.id = ctdh.donhang_id
+    where dh.id = madh
+    group by dh.id;
+ END //
+DELIMITER ;
+
+-- Câu 4. Tạo SP dùng để thêm một đơn đặt hàng.
+DELIMITER //
+CREATE PROCEDURE themdonhang(in id int,in madh int,in ngay date,in nhacungcap_id int)
+ BEGIN
+	insert into donhang values(id,madh,ngay,nhacungcap_id);
+ END //
+DELIMITER ;
+
+-- Câu 5. Tạo SP dùng để thêm một chi tiết đơn đặt hàng.
+DELIMITER //
+CREATE PROCEDURE themctdonhang(in id int,in donhang_id int,in vattu_id int,in soluongdat int)
+ BEGIN
+	insert into chitietdonhang values(id,donhang_id,vattu_id,soluongdat);
+ END //
+DELIMITER ;
+call themctdonhang(7,4,5,60);
+
